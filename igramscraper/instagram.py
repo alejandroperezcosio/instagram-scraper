@@ -205,7 +205,8 @@ class Instagram:
     def __get_mid(self):
         """manually fetches the machine id from graphQL"""
         time.sleep(self.sleep_between_requests)
-        response = self.__req.get('https://www.instagram.com/web/__mid/')
+        response = self.__req.get('https://www.instagram.com/web/__mid/', headers=self.generate_headers(
+             self.user_session))
 
         if response.status_code != Instagram.HTTP_OK:
             raise InstagramException.default(response.text,
@@ -297,13 +298,13 @@ class Instagram:
         account = self.get_account(username)
         return self.get_medias_by_user_id(account.identifier, count, maxId)
 
-    def get_medias_by_code(self, media_code):
+    def get_medias_by_code(self, media_code, return_json=False):
         """
         :param media_code: media code
         :return: Media
         """
         url = endpoints.get_media_page_link(media_code)
-        return self.get_media_by_url(url)
+        return self.get_media_by_url(url, return_json)
 
     def get_medias_by_user_id(self, id, count=12, max_id=''):
         """
@@ -437,7 +438,7 @@ class Instagram:
         media_link = Media.get_link_from_id(media_id)
         return self.get_media_by_url(media_link)
 
-    def get_media_by_url(self, media_url):
+    def get_media_by_url(self, media_url, return_json):
         """
         :param media_url: media url
         :return: Media
@@ -461,6 +462,9 @@ class Instagram:
                                              response.status_code)
 
         media_array = response.json()
+        if return_json:
+            return media_array
+
         try:
             media_in_json = media_array['graphql']['shortcode_media']
         except KeyError:
@@ -1457,7 +1461,7 @@ class Instagram:
 
         if force or not self.is_logged_in(session):
             time.sleep(self.sleep_between_requests)
-            response = self.__req.get(endpoints.BASE_URL)
+            response = self.__req.get(endpoints.BASE_URL, headers=self.generate_headers(self.user_session))
             if not response.status_code == Instagram.HTTP_OK:
                 raise InstagramException.default(response.text,
                                                  response.status_code)
